@@ -7,9 +7,10 @@
   "scripts": {
     "a": "shadcn add",
     "build:native:pack": "pnpm exec pkg -t node22-linuxstatic -d --no-bytecode --public-packages '*' --public script.js",
-    "build:native:bundle": "pnpm esbuild script.mts --bundle --platform=node --format=cjs --external:zx'*' --alias:zx/globals=zx/build/globals.cjs --outfile=script.js",
+    "build:native:bundle": "pnpm esbuild nativeapp/main.ts --bundle --platform=node --format=cjs --external:zx'*' --alias:zx/globals=zx/build/globals.cjs --outfile=script.js",
     "build:native": "pnpm build:native:bundle && pnpm build:native:pack",
     "build:native:dev": "nix build && cp result/script.mts .",
+    "build:native:host": "jq '.path = \"'$(realpath script.mts)'\"' tabs_md_workspaces.json.base > tabs_md_workspaces.json",
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
     "build": "wxt build",
