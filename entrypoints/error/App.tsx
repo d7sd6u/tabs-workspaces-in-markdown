@@ -10,18 +10,17 @@ function App() {
     queryKey: ['dataDir'],
     queryFn: () => chromeClient.getDataDir.query(),
   });
+  if (dataDir.isLoading) return;
   return (
-    <>
-      <Alert variant="destructive">
+    <div className="h-screen flex justify-center items-center">
+      <Alert className="w-96">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Configuration Error</AlertTitle>
         <AlertDescription>
-          {!dataDir.data && !dataDir.isLoading
-            ? 'You have to set dataDir!'
-            : 'Unknown error'}
+          {!dataDir.data ? 'You have to set dataDir!' : 'Unknown error'}
         </AlertDescription>
       </Alert>
-    </>
+    </div>
   );
 }
 
