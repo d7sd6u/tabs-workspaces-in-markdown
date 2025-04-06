@@ -1,0 +1,7 @@
+{
+  "name": "tabs_md_workspaces",
+  "description": "Example host for native messaging",
+  "path": "<replace with absolute path to script>",
+  "type": "stdio",
+  "allowed_extensions": ["tabs_md_workspaces@example.org"]
+}
