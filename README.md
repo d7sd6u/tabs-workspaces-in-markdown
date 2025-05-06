@@ -8,12 +8,18 @@ All the instructions assume Linux and Nix + direnv are installed.
 
 ## Development
 
+Install all dependencies:
+
+```sh
+pnpm install --frozen-lockfile --prefer-offline
+```
+
 Create native script entrypoint and native messaging host:
 
 ```sh
 pnpm build:native:dev
 pnpm build:native:host # requires jq
-ln test_md_workspaces.json ~/.mozilla/native-messaging-hosts/
+ln tabs_md_workspaces.json ~/.mozilla/native-messaging-hosts/
 ```
 
 Specify default vault (folder with notes) for the dev mode
@@ -29,6 +35,12 @@ pnpm dev:firefox
 ```
 
 ## Building
+
+Install all dependencies:
+
+```sh
+pnpm install --frozen-lockfile --prefer-offline
+```
 
 Building native script
 

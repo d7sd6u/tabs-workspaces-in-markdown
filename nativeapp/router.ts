@@ -4,6 +4,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import 'zx/globals';
 
+import { ferror, flog } from './log';
 import { mdToWorkspace, updateMdWithWorkspace } from './markdown';
 import {
   PersistedTab,
@@ -30,6 +31,7 @@ export const appRouter = t.router({
         const stat = await fs.stat(dataDir);
         if (!stat.isDirectory()) throw new Error('dataDir is not a directory!');
         const workspaces: Workspace[] = [];
+        flog('Starting rg spawn');
         const res = $`rg --glob '*.md' '^# Tabs Workspace\\s*$' ${dataDir} --files-with-matches`;
 
         try {
@@ -40,18 +42,13 @@ export const appRouter = t.router({
               });
               workspaces.push(mdToWorkspace(md, path.basename(child, '.md')));
             } catch (error) {
-              await fs.appendFile(
-                path.join(dataDir, 'tabs_md_workspaces.error.log'),
-                String(error),
-              );
+              ferror(String(error));
             }
           }
         } catch (error) {
-          await fs.appendFile(
-            path.join(dataDir, 'tabs_md_workspaces.error.log'),
-            String(error),
-          );
+          ferror(String(error));
         }
+        flog('Finished rg spawn');
         return workspaces;
       },
     ),
@@ -66,10 +63,11 @@ export const appRouter = t.router({
       }) => {
         const stat = await fs.stat(dataDir);
         if (!stat.isDirectory()) throw new Error('dataDir is not a directory!');
+        flog('Starting globbing');
         const file =
-          (await glob(dataDir, {
-            expandDirectories: { files: [input.name], extensions: ['md'] },
-          }).then((v) => v[0])) ?? path.join(dataDir, `${input.name}.md`);
+          (await findFile(input.name + '.md', dataDir)) ??
+          path.join(dataDir, `${input.name}.md`);
+        flog('Finished globbing');
         try {
           const md = await fs.readFile(file, { encoding: 'utf-8' });
           const existing: Workspace = mdToWorkspace(md, input.name);
@@ -106,6 +104,22 @@ export const appRouter = t.router({
 
 function listAll(tab: PersistedTab): PersistedTab[] {
   return [tab, ...tab.children.flatMap(listAll)];
+}
+
+async function findFile(
+  filename: string,
+  basedir: string,
+): Promise<string | undefined> {
+  const res = $`fd --fixed-strings ${filename} --base-directory ${basedir} `;
+
+  try {
+    for await (const child of res) {
+      if (path.basename(child) === filename) return path.join(basedir, child);
+    }
+  } catch (error) {
+    ferror(String(error));
+  }
+  return undefined;
 }
 
 export type AppRouter = typeof appRouter;

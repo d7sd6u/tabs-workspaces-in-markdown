@@ -128,61 +128,69 @@ export const appRouter = t.router({
       openedWorkspaces.add(cookieStoreId);
       cookieIdLocks.add(cookieStoreId);
 
-      const name = await browser.contextualIdentities
-        .get(cookieStoreId)
-        .then((v: ContextualIdentities.ContextualIdentity | null) => v?.name);
-
-      if (!name) return;
-
-      const dataDir = await getDataDir();
-      const allWorkspaces = await ctx.nativeClient.listWorkspaces.query({
-        options: { dataDir },
-      });
-      const workspace = allWorkspaces.find((w) => w.name === name) ?? {
-        name: input,
-        tabs: [],
-        bookmarks: [],
-        history: [],
-      };
-      // const [openedTabs] = await getOpenedWorkspaceTabs(input);
-      // if (openedTabs.length) return;
-
-      async function openTab(persisted: PersistedTab, openerTabId?: number) {
-        const tab = await browser.tabs.create({
-          url: persisted.url,
-          openerTabId,
-          active: false,
-          discarded: true,
-          title: persisted.title,
-          cookieStoreId,
-        });
-        for (const child of persisted.children) {
-          await openTab(child, tab.id);
-        }
-      }
       try {
-        let group: browser.tabs.Tab;
-        if (input.existingTabId !== undefined) {
-          group = await browser.tabs.update(input.existingTabId, {
-            url: getGroupUrl(name),
-            active: true,
-            pinned: await getPinDashboard(),
-          });
-        } else {
-          group = await browser.tabs.create({
-            cookieStoreId,
-            url: getGroupUrl(name),
-            active: true,
-            pinned: await getPinDashboard(),
-          });
-        }
+        const name = await browser.contextualIdentities
+          .get(cookieStoreId)
+          .then((v: ContextualIdentities.ContextualIdentity | null) => v?.name);
 
-        for (const tab of workspace.tabs) {
-          await openTab(tab, group.id);
+        if (!name) return;
+
+        const dataDir = await getDataDir();
+        const allWorkspaces = await ctx.nativeClient.listWorkspaces.query({
+          options: { dataDir },
+        });
+        const workspace = allWorkspaces.find((w) => w.name === name) ?? {
+          name: input,
+          tabs: [],
+          bookmarks: [],
+          history: [],
+        };
+        // const [openedTabs] = await getOpenedWorkspaceTabs(input);
+        // if (openedTabs.length) return;
+
+        async function openTab(persisted: PersistedTab, openerTabId?: number) {
+          const tab = await browser.tabs.create({
+            url: persisted.url,
+            openerTabId,
+            active: false,
+            discarded: true,
+            title: persisted.title,
+            cookieStoreId,
+          });
+          for (const child of persisted.children) {
+            await openTab(child, tab.id);
+          }
         }
-        for (const tab of workspace.bookmarks) {
-          await openTab(tab, group.id);
+        try {
+          let group: browser.tabs.Tab;
+          if (input.existingTabId !== undefined) {
+            group = await browser.tabs.update(input.existingTabId, {
+              url: getGroupUrl(name),
+              active: true,
+              pinned: await getPinDashboard(),
+            });
+          } else {
+            group = await browser.tabs.create({
+              cookieStoreId,
+              url: getGroupUrl(name),
+              active: true,
+              pinned: await getPinDashboard(),
+            });
+          }
+
+          for (const tab of workspace.tabs) {
+            await openTab(tab, group.id);
+          }
+          for (const tab of workspace.bookmarks) {
+            await openTab(tab, group.id);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          cookieIdLocks.delete(cookieStoreId);
         }
+      } catch (error) {
+        console.error(error);
       } finally {
         cookieIdLocks.delete(cookieStoreId);
       }

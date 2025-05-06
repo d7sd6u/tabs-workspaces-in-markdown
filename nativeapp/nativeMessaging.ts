@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises';
 import { TextDecoder, TextEncoder } from 'node:util';
 
+import { flog } from './log';
+
 async function getMessage(): Promise<Uint8Array> {
   const header = new Uint32Array(1);
   await readFullAsync(1, header as unknown as Uint8Array<ArrayBuffer>);
@@ -50,10 +52,7 @@ export async function listenToStdin(
         const inputJson: unknown = JSON.parse(inputStr);
         const outputJson = await handler(inputJson);
         const outputStr = JSON.stringify(outputJson);
-        // void fs.appendFile(
-        //   path.join(import.meta.dirname, '../data/msg.log'),
-        //   inputStr + '\n' + outputStr + '\n',
-        // );
+        flog(inputStr + '\n' + outputStr);
         output = new TextEncoder().encode(outputStr);
       } catch {
         /* empty */
